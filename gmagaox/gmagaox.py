@@ -73,7 +73,20 @@ class MODEL():
                                               planetype=poppy.poppy_core.PlaneType.pupil,
                                               name='GMT Pupil')
 
-        # self.init_dm()
+        self.pupil_mask = self.PUPIL.amplitude>0
+
+        self.ifp8157_1_correction = 0.0*u.mm
+        self.fsm_correction = 0.0*u.mm
+        self.ifp14_correction = 0.0*u.mm
+        self.ADCpupil_correction = 0.0*u.mm
+        self.ifp8157_2_correction = 0.0*u.mm
+        self.ifp15_correction = 0.0*u.mm
+
+        # self.ifp8157_1_correction = 0.010521023*u.mm
+        # self.fsm_correction = 0.0*u.mm
+        # self.ifp14_correction = 91.422577*u.mm
+
+        # self.init_dms()
         # self.dm_ref = dm_ref
         # self.set_dm(self.dm_ref)
         
@@ -96,32 +109,16 @@ class MODEL():
         
     #     self.full_stroke = self.DM.full_stroke
     #     self.dm_mask = self.DM.dm_mask
-        
-    def reset_dm(self):
-        self.set_dm(self.dm_ref)
     
-    def zero_dm(self):
-        self.set_dm(np.zeros((34,34)))
-        
-    def set_dm(self, command):
-        if command.shape[0]==self.Nacts:
-            dm_command = self.DM.map_actuators_to_command(xp.asarray(command))
-        else: 
-            dm_command = xp.asarray(command)
-        self.DM.command = dm_command
-        
-    def add_dm(self, command):
-        if command.shape[0]==self.Nacts:
-            dm_command = self.DM.map_actuators_to_command(xp.asarray(command))
-        else: 
-            dm_command = xp.asarray(command)
-        self.DM.command += dm_command
-        
-    def get_dm(self, only_actuators=False):
-        if only_actuators:
-            return self.DM.actuators
-        else:
-            return self.DM.command
+    def init_woofer():
+
+        return
+    
+    def init_tweeter():
+        return
+    
+    def init_ncpDM():
+        return
     
     def init_inwave(self):
         inwave = poppy.FresnelWavefront(beam_radius=self.pupil_diam/2, wavelength=self.wavelength,
@@ -140,33 +137,34 @@ class MODEL():
         self.fosys.add_optic(self.planes['m1'])
         self.fosys.add_optic(self.planes['m2'], distance=self.distances['m1_m2'])
         self.fosys.add_optic(self.planes['m3'], distance=self.distances['m2_m3'])
-        self.fosys.add_optic(self.planes['ifp8157'], distance=self.distances['m3_ifp8157'])
-        self.fosys.add_optic(self.planes['Roap1'], distance=self.distances['ifp8157_Roap1'])
+        self.fosys.add_optic(self.planes['ifp8.157'], distance=self.distances['m3_ifp8.157'] + self.ifp8157_1_correction)
+        self.fosys.add_optic(self.planes['Roap1'], distance=self.distances['ifp8.157_Roap1'])# - self.ifp8157_1_correction)
         self.fosys.add_optic(self.planes['fm1'], distance=self.distances['Roap1_fm1'])
-        self.fosys.add_optic(self.planes['fsm'], distance=self.distances['fm1_fsm'])
-        self.fosys.add_optic(self.planes['fm2'], distance=self.distances['fsm_fm2'])
+        self.fosys.add_optic(self.planes['fsm-pp'], distance=self.distances['fm1_fsm-pp'] + self.fsm_correction)
+        self.fosys.add_optic(self.planes['fm2'], distance=self.distances['fsm-pp_fm2'])# - self.fsm_correction)
         self.fosys.add_optic(self.planes['Roap2'], distance=self.distances['fm2_Roap2'])
         self.fosys.add_optic(self.planes['fm3'], distance=self.distances['Roap2_fm3'])
-        self.fosys.add_optic(self.planes['ifp14'], distance=self.distances['fm3_ifp14'])
-        # self.fosys.add_optic(self.planes['km1'], distance=self.distances['ifp14_km1'])
-        # self.fosys.add_optic(self.planes['km2'], distance=self.distances['km1_km2'])
-        # self.fosys.add_optic(self.planes['km3'], distance=self.distances['km2_km3'])
-        # self.fosys.add_optic(self.planes['fm4'], distance=self.distances['km3_fm4'])
-        # self.fosys.add_optic(self.planes['AOoap1'], distance=self.distances['fm4_AOoap1'])
-        # self.fosys.add_optic(self.planes['fm5'], distance=self.distances['AOoap1_fm5'])
-        # self.fosys.add_optic(self.planes['fm6'], distance=self.distances['fm5_fm6'])
-        # self.fosys.add_optic(self.planes['fm7'], distance=self.distances['fm6_fm7'])
-        # self.fosys.add_optic(self.planes['AOoap2'], distance=self.distances['fm7_AOoap2'])
-        # self.fosys.add_optic(self.planes['ifp8157'], distance=self.distances['AOoap2_ifp8157'])
-        # self.fosys.add_optic(self.planes['fm8'], distance=self.distances['ifp8157_fm8'])
-        # self.fosys.add_optic(self.planes['AOoap3'], distance=self.distances['fm8_AOoap3'])
-        # self.fosys.add_optic(self.planes['woofer'], distance=self.distances['AOoap3_woofer'])
-        # self.fosys.add_optic(self.planes['AOoap4'], distance=self.distances['woofer_AOoap4'])
-        # self.fosys.add_optic(self.planes['fm9'], distance=self.distances['AOoap4_fm9'])
-        # self.fosys.add_optic(self.planes['ifp15'], distance=self.distances['fm9_ifp15'])
-        # self.fosys.add_optic(self.planes['fm10'], distance=self.distances['ifp15_fm10'])
-        # self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['fm10_AOoap5'])
-        # self.fosys.add_optic(self.planes['tweeter'], distance=self.distances['AOoap5_tweeter'])
+        self.fosys.add_optic(self.planes['ifp14'], distance=self.distances['fm3_ifp14']+self.ifp14_correction)
+        self.fosys.add_optic(self.planes['km1'], distance=self.distances['ifp14_km1'])# - self.ifp14_correction)
+        self.fosys.add_optic(self.planes['km2'], distance=self.distances['km1_km2'])
+        self.fosys.add_optic(self.planes['km3'], distance=self.distances['km2_km3'])
+        self.fosys.add_optic(self.planes['fm4'], distance=self.distances['km3_fm4'])
+        self.fosys.add_optic(self.planes['AOoap1'], distance=self.distances['fm4_AOoap1'])
+        self.fosys.add_optic(self.planes['fm5'], distance=self.distances['AOoap1_fm5'])
+        self.fosys.add_optic(self.planes['ADCpupil'], distance=self.distances['fm5_ADCpupil'] + self.ADCpupil_correction)
+        self.fosys.add_optic(self.planes['fm6'], distance=self.distances['ADCpupil_fm6'])# - self.ADCpupil_correction)
+        self.fosys.add_optic(self.planes['fm7'], distance=self.distances['fm6_fm7'])
+        self.fosys.add_optic(self.planes['AOoap2'], distance=self.distances['fm7_AOoap2'])
+        self.fosys.add_optic(self.planes['ifp8.157'], distance=self.distances['AOoap2_ifp8.157'] + self.ifp8157_2_correction)
+        self.fosys.add_optic(self.planes['fm8'], distance=self.distances['ifp8.157_fm8'])# - self.ifp8157_2_correction)
+        self.fosys.add_optic(self.planes['AOoap3'], distance=self.distances['fm8_AOoap3'])
+        self.fosys.add_optic(self.planes['woofer'], distance=self.distances['AOoap3_woofer'])
+        self.fosys.add_optic(self.planes['AOoap4'], distance=self.distances['woofer_AOoap4'])
+        self.fosys.add_optic(self.planes['fm9'], distance=self.distances['AOoap4_fm9'])
+        self.fosys.add_optic(self.planes['ifp15'], distance=self.distances['fm9_ifp15'] + self.ifp15_correction)
+        self.fosys.add_optic(self.planes['fm10'], distance=self.distances['ifp15_fm10'])# - self.ifp15_correction)
+        self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['fm10_AOoap5'])
+        self.fosys.add_optic(self.planes['tweeter'], distance=self.distances['AOoap5_tweeter'])
 
         return
 
