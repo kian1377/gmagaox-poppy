@@ -137,11 +137,12 @@ distances = {
     'apodizer_AOoap9-1': 8.206110132276008E+002 * u.mm, # should be a 24mm pupil plane
     'AOoap9-1_fm15': 2.279598983720862E+002 * u.mm, 
     'fm15_ifp34.5': 6.000000000000000E+002 * u.mm, 
-    # 'ifp34.5_AOoap9-2': 8.635967976970424E+002 * u.mm, 
+    'ifp34.5_AOoap9-2': 8.635967976970424E+002 * u.mm, 
     # 'ifp34.5_AOoap9-2':849.83499* u.mm,
     'ifp34.5_AOoap9-2':863.5968*u.mm, 
     # 'AOoap9-2_lyot-pp': 8.498349949126568E+002 * u.mm, 
-    'AOoap9-2_lyot-pp':863.5968* u.mm,
+    'AOoap9-2_lyot-pp':8.635967976970424E+002 * u.mm,
+    'AOoap9-2_lyot-pp':863.5968*u.mm,
     'lyot-pp_fm16': 7.499983552419872E+001 * u.mm, # should be about a 25.2mm pupil 
     'fm16_AOoap9-3': 7.168855598646333E+002 * u.mm + 71.718319*u.mm, 
     'AOoap9-3_fm17': 1.477444651680999E+002 *u.mm, 
