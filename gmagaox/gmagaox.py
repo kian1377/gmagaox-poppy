@@ -41,7 +41,7 @@ class MODEL():
             ):
         
         self.pupil_diam = 25.4*u.m
-        self.wavelength_c = 650*u.nm
+        self.wavelength_c = 633*u.nm
         self.wavelength = self.wavelength_c if wavelength is None else wavelength
         
         self.npix = int(npix)
@@ -69,10 +69,13 @@ class MODEL():
         self.distances = optics.distances
         self.planes = optics.planes
 
-        self.PUPIL = poppy.FITSOpticalElement(transmission='gmagaox/data/gmt_pupil_800.fits', 
+        pupil_fpath = f'gmagaox/data/gmt_pupil_{self.npix:d}.fits'
+        self.PUPIL = poppy.FITSOpticalElement(transmission=pupil_fpath, 
                                               planetype=poppy.poppy_core.PlaneType.pupil,
                                               name='GMT Pupil')
-        self.pupil_mask = self.PUPIL.amplitude>0
+        self.pupil_mask = utils.pad_or_crop(self.PUPIL.amplitude, self.npix)>0
+
+        self.APODIZER = None
 
         self.ideal_coro = False
 
@@ -234,7 +237,10 @@ class MODEL():
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['fm14'])
         self.fosys.add_optic(self.planes['ncpDM'], distance=self.distances['fm14_ncpDM'])
         # if self.use_opds: self.fosys.add_optic(opds.wfe_psds['ncpDM'])
-        self.fosys.add_optic(self.planes['apodizer'], distance=self.distances['ncpDM_apodizer']+self.apodizer_correction)
+        if self.APODIZER is None: 
+            self.fosys.add_optic(self.planes['apodizer'], distance=self.distances['ncpDM_apodizer']+self.apodizer_correction)
+        else:
+            self.fosys.add_optic(self.APODIZER, distance=self.distances['ncpDM_apodizer']+self.apodizer_correction)
         self.fosys.add_optic(self.planes['AOoap9-1'], distance=self.distances['apodizer_AOoap9-1'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap9-1'])
         self.fosys.add_optic(self.planes['fm15'], distance=self.distances['AOoap9-1_fm15'])
