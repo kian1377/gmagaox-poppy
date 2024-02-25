@@ -75,6 +75,15 @@ class MODEL():
                                               name='GMT Pupil')
         self.pupil_mask = utils.pad_or_crop(self.PUPIL.amplitude, self.npix)>0
 
+        tweeter_surf_fpath = 'gmagaox/data/tweeter_opd.fits'
+        self.tweeter_surf = poppy.FITSOpticalElement(opd=tweeter_surf_fpath, opdunits='meters',
+                                                     planetype=poppy.poppy_core.PlaneType.pupil,
+                                                     name='Tweeter Surface')
+        
+        ncpDM_surf_fpath = 'gmagaox/data/ncp_opd.fits'
+        self.ncpDM_surf = poppy.FITSOpticalElement(opd=ncpDM_surf_fpath, opdunits='meters',
+                                                   planetype=poppy.poppy_core.PlaneType.pupil,
+                                                   name='NCP DM Surface')
         self.APODIZER = None
 
         self.ideal_coro = False
@@ -205,7 +214,7 @@ class MODEL():
         self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['fm10_AOoap5'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap5'])
         self.fosys.add_optic(self.planes['tweeter-pp'], distance=self.distances['AOoap5_tweeter-pp']+ self.tweeter_correction)
-        # if self.use_opds: self.fosys.add_optic(opds.wfe_psds['tweeter'])
+        if self.use_opds: self.fosys.add_optic(self.tweeter_surf)
         self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['tweeter-pp_AOoap5'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap5'])
         self.fosys.add_optic(self.planes['fm10'], distance=self.distances['AOoap5_fm10'])
@@ -236,7 +245,7 @@ class MODEL():
         self.fosys.add_optic(self.planes['fm14'], distance=self.distances['fm13_fm14'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['fm14'])
         self.fosys.add_optic(self.planes['ncpDM'], distance=self.distances['fm14_ncpDM'])
-        # if self.use_opds: self.fosys.add_optic(opds.wfe_psds['ncpDM'])
+        if self.use_opds: self.fosys.add_optic(self.ncpDM_surf)
         if self.APODIZER is None: 
             self.fosys.add_optic(self.planes['apodizer'], distance=self.distances['ncpDM_apodizer']+self.apodizer_correction)
         else:
