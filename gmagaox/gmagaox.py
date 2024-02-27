@@ -86,8 +86,6 @@ class MODEL():
                                                    name='NCP DM Surface')
         self.APODIZER = None
 
-        self.ideal_coro = False
-
         self.ifp8157_1_correction = 0.0*u.mm
         self.fsm_correction = 0.0*u.mm
         self.ifp14_correction = 0.0*u.mm
@@ -118,6 +116,13 @@ class MODEL():
         self.woofer_correction = 75*u.mm
         self.fpsm_correction = -1/2*u.mm
         self.apodizer_correction = -20*u.mm
+
+        self.ideal_coro = False
+        self.use_lyot_opd = False
+        self.LYOT_WFE = poppy.ScalarTransmission(name='Lyot to Tweeter OPD')
+        self.end_at_lyot = False
+
+        self.use_dm_surfaces = False
 
         # self.init_dms()
         # self.dm_ref = dm_ref
@@ -214,7 +219,10 @@ class MODEL():
         self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['fm10_AOoap5'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap5'])
         self.fosys.add_optic(self.planes['tweeter-pp'], distance=self.distances['AOoap5_tweeter-pp']+ self.tweeter_correction)
-        if self.use_opds: self.fosys.add_optic(self.tweeter_surf)
+        if self.use_dm_surfaces:
+            self.fosys.add_optic(self.tweeter_surf)
+        if self.use_lyot_opd:
+            self.fosys.add_optic(self.LYOT_WFE)
         self.fosys.add_optic(self.planes['AOoap5'], distance=self.distances['tweeter-pp_AOoap5'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap5'])
         self.fosys.add_optic(self.planes['fm10'], distance=self.distances['AOoap5_fm10'])
@@ -245,7 +253,8 @@ class MODEL():
         self.fosys.add_optic(self.planes['fm14'], distance=self.distances['fm13_fm14'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['fm14'])
         self.fosys.add_optic(self.planes['ncpDM'], distance=self.distances['fm14_ncpDM'])
-        if self.use_opds: self.fosys.add_optic(self.ncpDM_surf)
+        if self.use_dm_surfaces:
+            self.fosys.add_optic(self.ncpDM_surf)
         if self.APODIZER is None: 
             self.fosys.add_optic(self.planes['apodizer'], distance=self.distances['ncpDM_apodizer']+self.apodizer_correction)
         else:
@@ -258,6 +267,8 @@ class MODEL():
         self.fosys.add_optic(self.planes['AOoap9-2'], distance=self.distances['ifp34.5_AOoap9-2'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap9-2'])
         self.fosys.add_optic(self.planes['lyot-pp'], distance=self.distances['AOoap9-2_lyot-pp'] + self.lyot_correction)
+        if self.end_at_lyot: 
+            return
         self.fosys.add_optic(self.planes['fm16'], distance=self.distances['lyot-pp_fm16'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['fm16'])
         self.fosys.add_optic(self.planes['AOoap9-3'], distance=self.distances['fm16_AOoap9-3'])
@@ -287,7 +298,7 @@ class MODEL():
         
         return wfs
     
-    def calc_wf(self): 
+    def calc_wf(self, pixelscale=False): 
         self.init_fosys()
         inwave = poppy.FresnelWavefront(beam_radius=self.pupil_diam/2, wavelength=self.wavelength, npix=self.npix, oversample=self.oversample)
         if self.source_offset[0]>0 or self.source_offset[1]>0:
@@ -303,6 +314,8 @@ class MODEL():
         if self.Imax_ref is not None:
             wfarr = wfarr/np.sqrt(self.Imax_ref)
 
+        if pixelscale:
+            return wfarr, wfs[0].pixelscale
         return wfarr
     
     def snap(self):

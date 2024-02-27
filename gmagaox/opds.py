@@ -6,6 +6,8 @@ import astropy.units as u
 SURF_UNIT = u.nm
 LENGTH_UNIT = u.m
 SCREEN_SIZE = int(800*4)
+SCREEN_SIZE = 5080
+SCREEN_SIZE = 8192
 
 # m1_params = {
 #     'psd_parameters': [[]], 
