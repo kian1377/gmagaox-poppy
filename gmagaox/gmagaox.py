@@ -79,11 +79,15 @@ class MODEL():
         self.tweeter_surf = poppy.FITSOpticalElement(opd=tweeter_surf_fpath, opdunits='meters',
                                                      planetype=poppy.poppy_core.PlaneType.pupil,
                                                      name='Tweeter Surface')
+        self.tweeter_surf.opd = 2*self.tweeter_surf.opd 
         
         ncpDM_surf_fpath = 'gmagaox/data/ncp_opd.fits'
+
         self.ncpDM_surf = poppy.FITSOpticalElement(opd=ncpDM_surf_fpath, opdunits='meters',
                                                    planetype=poppy.poppy_core.PlaneType.pupil,
                                                    name='NCP DM Surface')
+        self.ncpDM_surf.opd = 2*self.ncpDM_surf.opd
+        
         self.APODIZER = None
 
         self.ifp8157_1_correction = 0.0*u.mm
@@ -124,6 +128,8 @@ class MODEL():
 
         self.use_dm_surfaces = False
 
+        self.LYOT = None
+
         # self.init_dms()
         # self.dm_ref = dm_ref
         # self.set_dm(self.dm_ref)
@@ -159,7 +165,11 @@ class MODEL():
         return
 
     def init_fosys(self):
+        self.psf_pixelscale_lamD = 1/self.oversample
 
+        if self.LYOT is None:
+            self.LYOT = self.planes['lyot-pp']
+        
         self.fosys = poppy.FresnelOpticalSystem(name='ESC', pupil_diameter=self.pupil_diam, 
                                                 npix=self.npix, beam_ratio=1/self.oversample, verbose=True)
         self.fosys.add_optic(self.PUPIL)
@@ -266,7 +276,7 @@ class MODEL():
         self.fosys.add_optic(self.planes['ifp34.5'], distance=self.distances['fm15_ifp34.5'] + self.ifp34p5_correction)
         self.fosys.add_optic(self.planes['AOoap9-2'], distance=self.distances['ifp34.5_AOoap9-2'])
         if self.use_opds: self.fosys.add_optic(opds.wfe_psds['AOoap9-2'])
-        self.fosys.add_optic(self.planes['lyot-pp'], distance=self.distances['AOoap9-2_lyot-pp'] + self.lyot_correction)
+        self.fosys.add_optic(self.LYOT, distance=self.distances['AOoap9-2_lyot-pp'] + self.lyot_correction)
         if self.end_at_lyot: 
             return
         self.fosys.add_optic(self.planes['fm16'], distance=self.distances['lyot-pp_fm16'])

@@ -8,6 +8,9 @@ import astropy.units as u
 from astropy.io import fits
 import pickle
 
+import matplotlib.pyplot as plt
+
+
 def pad_or_crop( arr_in, npix ):
     n_arr_in = arr_in.shape[0]
     if n_arr_in == npix:
@@ -162,26 +165,74 @@ def centroid(arr, rounded=False):
     yc = round(weighted_sum_y/total_sum_y) if rounded else weighted_sum_y/total_sum_y
     return (yc, xc)
 
+def create_circ_mask(h, w, center=None, radius=None):
+    if center is None: # use the middle of the image
+        center = (int(w//2), int(h//2))
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+        
+    Y, X = xp.ogrid[:h, :w]
+    dist_from_center = xp.sqrt((X - center[0] + 1/2)**2 + (Y - center[1] + 1/2)**2)
 
-import socket
+    mask = dist_from_center <= radius
+    return mask
 
-def send(data, host, port):
-    # # Create a 5x10 NumPy array for demonstration
-    # data = np.random.rand(5, 10)
-
-    # Create a socket and connect to the receiver
-    # host = '18.18.33.51'
-    # port = 12345
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((host, port))
-
-    # Serialize the NumPy array as a binary string
-    data_bytes = data.tobytes()
-
-    # Send the data to the receiver
-    s.send(data_bytes)
-
-    # Close the socket
-    s.close()
+def create_annular_focal_plane_mask(pixelscale, npsf,
+                                    inner_radius, outer_radius, 
+                                    edge=None,
+                                    shift=(0,0), 
+                                    rotation=0,
+                                    plot=False):
+    x = (xp.linspace(-npsf/2, npsf/2-1, npsf) + 1/2)*pixelscale
+    x,y = xp.meshgrid(x,x)
+    r = xp.hypot(x, y)
+    mask = (r < outer_radius) * (r > inner_radius)
+    if edge is not None: mask *= (x > edge)
     
+    mask = _scipy.ndimage.rotate(mask, rotation, reshape=False, order=0)
+    mask = _scipy.ndimage.shift(mask, (shift[1], shift[0]), order=0)
     
+    return mask
+
+
+def get_radial_dist(shape, scaleyx=(1.0, 1.0), cenyx=None):
+    '''
+    Compute the radial separation of each pixel
+    from the center of a 2D array, and optionally 
+    scale in x and y.
+    '''
+    indices = np.indices(shape)
+    if cenyx is None:
+        cenyx = ( (shape[0] - 1) / 2., (shape[1] - 1)  / 2.)
+    radial = np.sqrt( (scaleyx[0]*(indices[0] - cenyx[0]))**2 + (scaleyx[1]*(indices[1] - cenyx[1]))**2 )
+    return radial
+
+def get_radial_contrast(im, mask, nbins=50, cenyx=None):
+    im = ensure_np_array(im)
+    mask = ensure_np_array(mask)
+    radial = get_radial_dist(im.shape, cenyx=cenyx)
+    bins = np.linspace(0, radial.max(), num=nbins, endpoint=True)
+    digrad = np.digitize(radial, bins)
+    profile = np.asarray([np.mean(im[ (digrad == i) & mask]) for i in np.unique(digrad)])
+    return bins, profile
+    
+def plot_radial_contrast(im, mask, pixelscale, nbins=30, cenyx=None, 
+                         xlims=None, ylims=None, title='Contrast vs Radial Position', 
+                         return_data=False):
+    bins, contrast = get_radial_contrast(im, mask, nbins=nbins, cenyx=cenyx)
+    r = bins * pixelscale
+
+    fig,ax = plt.subplots(nrows=1, ncols=1, dpi=125, figsize=(6,4))
+    ax.semilogy(r,contrast)
+    ax.set_xlabel('Radial Position [$\lambda/D$]')
+    ax.set_ylabel('Contrast')
+    ax.set_title(title)
+    ax.grid()
+    if xlims is not None: ax.set_xlim(xlims[0], xlims[1])
+    if ylims is not None: ax.set_ylim(ylims[0], ylims[1])
+    plt.close()
+    display(fig)
+
+    if return_data:
+        return r, contrast
+
